@@ -1,0 +1,1759 @@
+<!doctype html>
+<html lang="vi" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Climate Change Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.success {
+      background-color: #10b981;
+    }
+
+    .toast.error {
+      background-color: #ef4444;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full">
+  <div id="app" class="h-full w-full overflow-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+   <header class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
+     <h1 id="main-title" class="text-4xl font-bold text-gray-900">Mô phỏng Biến đổi Khí hậu</h1>
+     <p id="main-subtitle" class="text-gray-600 mt-2">Công cụ mô phỏng biến đổi khí hậu tương tác</p>
+    </div>
+   </header>
+   <nav class="bg-white shadow-sm sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+     <div class="flex space-x-4 overflow-x-auto py-4"><button id="tab-historical" class="px-4 py-2 text-blue-600 border-b-4 border-blue-600 font-semibold whitespace-nowrap"> 📊 Dữ liệu Lịch sử </button> <button id="tab-simulation" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold whitespace-nowrap"> 🎛️ Mô phỏng </button> <button id="tab-solutions" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold whitespace-nowrap"> 💡 Giải pháp </button> <button id="tab-timeline" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold whitespace-nowrap"> ⏱️ Dòng thời gian </button> <button id="tab-scenarios" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold whitespace-nowrap"> 📋 Kịch bản Đã lưu </button> <button id="tab-compare" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold whitespace-nowrap"> 📈 So sánh </button> <button id="tab-quiz" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold whitespace-nowrap"> 🎯 Quiz </button> <button id="tab-dictionary" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold whitespace-nowrap"> 📖 Từ điển </button> <button id="tab-feedback" class="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold whitespace-nowrap"> 🔄 Vòng phản hồi </button>
+     </div>
+    </div>
+   </nav>
+   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"><!-- Historical Tab -->
+    <div id="content-historical" class="tab-content">
+     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Dữ liệu Lịch sử NASA</h2>
+      <p class="text-gray-600 mb-4">Biểu đồ nhiệt độ toàn cầu từ năm 1880 đến 2023</p>
+      <div class="bg-gray-50 p-4 rounded-lg mb-6">
+       <canvas id="historicalChart"></canvas>
+      </div>
+      <div class="grid md:grid-cols-3 gap-4">
+       <div class="bg-red-50 p-4 rounded-lg border-2 border-red-200">
+        <h3 class="font-bold text-lg mb-2">🌡️ Nhiệt độ Tăng</h3>
+        <p class="text-3xl font-bold text-red-600">+1.2°C</p>
+        <p class="text-sm text-gray-600 mt-2">So với thời kỳ tiền công nghiệp (1850-1900)</p>
+       </div>
+       <div class="bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
+        <h3 class="font-bold text-lg mb-2">💨 Nồng độ CO₂</h3>
+        <p class="text-3xl font-bold text-orange-600">420 ppm</p>
+        <p class="text-sm text-gray-600 mt-2">Cao nhất trong 800,000 năm</p>
+       </div>
+       <div class="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+        <h3 class="font-bold text-lg mb-2">🌊 Mực nước biển</h3>
+        <p class="text-3xl font-bold text-blue-600">+20 cm</p>
+        <p class="text-sm text-gray-600 mt-2">Tăng trung bình kể từ 1880</p>
+       </div>
+      </div>
+     </div>
+    </div><!-- Simulation Tab -->
+    <div id="content-simulation" class="tab-content hidden">
+     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">🎛️ Điều chỉnh Thông số</h2>
+      <div class="grid md:grid-cols-3 gap-6 mb-6">
+       <div><label for="co2-rate" class="block text-sm font-semibold text-gray-700 mb-2">Tốc độ tăng CO₂ (%/năm)</label> <input type="number" id="co2-rate" step="0.1" value="0.5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+       </div>
+       <div><label for="temp-anomaly" class="block text-sm font-semibold text-gray-700 mb-2">Nhiệt độ hiện tại (°C)</label> <input type="number" id="temp-anomaly" step="0.1" value="1.2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+       </div>
+       <div><label for="ice-melt" class="block text-sm font-semibold text-gray-700 mb-2">Tốc độ băng tan (mm/năm)</label> <input type="number" id="ice-melt" step="0.1" value="3.3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+       </div>
+      </div>
+      <div class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-6">
+       <h3 class="text-lg font-bold text-blue-900 mb-3">📈 Dự đoán năm 2100</h3>
+       <div class="grid md:grid-cols-3 gap-4 text-center">
+        <div>
+         <p class="text-sm text-blue-700 font-semibold">Nhiệt độ</p>
+         <p id="temp-2100" class="text-2xl font-bold text-blue-900">+2.5°C</p>
+        </div>
+        <div>
+         <p class="text-sm text-blue-700 font-semibold">Mực nước biển</p>
+         <p id="sea-level-2100" class="text-2xl font-bold text-blue-900">+300 mm</p>
+        </div>
+        <div>
+         <p class="text-sm text-blue-700 font-semibold">CO₂</p>
+         <p id="co2-2100" class="text-2xl font-bold text-blue-900">550 ppm</p>
+        </div>
+       </div>
+      </div>
+      <div id="threat-level-box" class="border-l-4 p-4 mb-6 rounded-r-lg">
+       <h3 class="text-lg font-bold mb-3">⚠️ Mức độ Đe dọa</h3>
+       <div class="flex items-center gap-4 mb-3"><span id="threat-icon" class="text-4xl">🌍</span>
+        <div>
+         <p id="threat-level" class="text-2xl font-bold">Trung bình</p>
+         <p id="threat-description" class="text-sm mt-1">Tác động đáng kể đến hệ sinh thái</p>
+        </div>
+       </div>
+       <div id="threat-events" class="mt-4 space-y-2">
+        <p class="text-sm font-semibold mb-2">Sự kiện có thể xảy ra:</p>
+       </div>
+      </div>
+      <div class="bg-gray-50 p-4 rounded-lg mb-6">
+       <canvas id="predictionChart"></canvas>
+      </div>
+      <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+       <h3 class="text-lg font-semibold text-green-900 mb-3">💾 Lưu Kịch bản</h3>
+       <div class="flex flex-wrap gap-3"><input type="text" id="scenario-name" placeholder="Tên kịch bản (tùy chọn)" class="flex-1 min-w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"> <button id="save-scenario" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition"> 💾 Lưu kịch bản </button>
+       </div>
+       <div id="limit-warning" class="hidden mt-3 p-3 bg-red-100 border border-red-300 text-red-800 rounded-lg">
+        ⚠️ Đã đạt giới hạn 999 kịch bản. Vui lòng xóa bớt kịch bản cũ.
+       </div>
+      </div>
+     </div>
+    </div><!-- Solutions Tab -->
+    <div id="content-solutions" class="tab-content hidden">
+     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">💡 Giải pháp Giảm Phát thải</h2>
+      <p class="text-gray-600 mb-4">Kích hoạt các giải pháp và xem tác động đến khí hậu</p>
+      <div class="grid md:grid-cols-3 gap-4 mb-6">
+       <div id="solution-renewable" class="p-4 bg-gray-50 rounded-lg border-2 border-gray-300 cursor-pointer hover:shadow-lg transition">
+        <div class="flex items-center justify-between mb-2">
+         <h3 class="font-bold text-lg">⚡ Năng lượng Tái tạo</h3><span class="solution-status text-2xl">⭕</span>
+        </div>
+        <p class="text-sm text-gray-600 mb-2">Chuyển đổi sang năng lượng mặt trời, gió</p>
+        <p class="text-green-600 font-semibold">Giảm: -0.3°C đến 2100</p>
+       </div>
+       <div id="solution-reforestation" class="p-4 bg-gray-50 rounded-lg border-2 border-gray-300 cursor-pointer hover:shadow-lg transition">
+        <div class="flex items-center justify-between mb-2">
+         <h3 class="font-bold text-lg">🌳 Trồng cây</h3><span class="solution-status text-2xl">⭕</span>
+        </div>
+        <p class="text-sm text-gray-600 mb-2">Phục hồi rừng và hấp thụ CO₂</p>
+        <p class="text-green-600 font-semibold">Giảm: -0.2°C đến 2100</p>
+       </div>
+       <div id="solution-electric" class="p-4 bg-gray-50 rounded-lg border-2 border-gray-300 cursor-pointer hover:shadow-lg transition">
+        <div class="flex items-center justify-between mb-2">
+         <h3 class="font-bold text-lg">🚗 Xe Điện</h3><span class="solution-status text-2xl">⭕</span>
+        </div>
+        <p class="text-sm text-gray-600 mb-2">Chuyển sang phương tiện sạch</p>
+        <p class="text-green-600 font-semibold">Giảm: -0.15°C đến 2100</p>
+       </div>
+      </div>
+      <div class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-6">
+       <h3 class="text-lg font-bold text-blue-900 mb-2">📊 Tổng tác động</h3>
+       <p class="text-2xl font-bold text-blue-700">Giảm: <span id="total-impact">0.0</span>°C đến năm 2100</p>
+       <p class="text-sm text-blue-800 mt-2">Nhiệt độ dự kiến: <span id="final-temp">+2.5</span>°C (thay vì +2.5°C)</p>
+      </div>
+      <div class="bg-gray-50 p-4 rounded-lg">
+       <h3 class="text-lg font-bold text-gray-800 mb-3">📈 So sánh Kịch bản</h3>
+       <canvas id="solutionsChart"></canvas>
+      </div>
+     </div>
+    </div><!-- Timeline Tab -->
+    <div id="content-timeline" class="tab-content hidden">
+     <div class="bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">⏱️ Dòng thời gian Khí hậu với Sự kiện Ngẫu nhiên</h2>
+      <p class="text-gray-600 mb-4">Du hành qua thời gian từ 2024 đến 2100. Mỗi năm có 30% cơ hội xảy ra sự kiện ngẫu nhiên!</p>
+      <div class="text-center mb-6">
+       <div class="text-6xl mb-4" id="timeline-icon">
+        🌍
+       </div>
+       <p class="text-3xl font-bold text-blue-600 mb-2" id="timeline-year">Năm 2024</p>
+       <p class="text-xl text-gray-700 mb-1" id="timeline-temp">Nhiệt độ: +1.2°C</p>
+       <p class="text-lg text-gray-600" id="timeline-co2">CO₂: 420 ppm</p>
+       <div id="timeline-event" class="hidden mt-4 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+        <p class="text-xl font-bold text-yellow-800 mb-2">⚠️ Sự kiện Khí hậu!</p>
+        <p class="text-yellow-900 font-semibold" id="event-description"></p>
+        <p class="text-yellow-700 text-sm mt-2" id="event-impact"></p>
+       </div>
+      </div>
+      <div class="flex justify-center gap-4 mb-4"><button id="timeline-prev" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"> ⬅️ Năm trước </button> <button id="timeline-next" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition"> Năm sau ➡️ </button> <button id="timeline-reset" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition"> 🔄 Khởi động lại </button>
+      </div>
+      <div class="bg-gray-100 rounded-lg p-4">
+       <div class="flex items-center justify-between mb-2"><span class="text-sm font-semibold text-gray-700">Tiến trình:</span> <span class="text-sm font-semibold text-gray-700" id="timeline-progress">0 / 76 năm</span>
+       </div>
+       <div class="w-full bg-gray-300 rounded-full h-3">
+        <div id="timeline-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+       </div>
+      </div>
+     </div>
+    </div><!-- Scenarios Tab -->
+    <div id="content-scenarios" class="tab-content hidden">
+     <div class="bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">📋 Kịch bản Đã lưu</h2>
+      <p class="text-gray-600 mb-6">Quản lý các kịch bản bạn đã lưu vào Canva Sheet.</p>
+      <div id="scenarios-list" class="space-y-4">
+       <p class="text-center text-gray-500 py-8">Chưa có kịch bản nào. Hãy tạo kịch bản mới ở tab Mô phỏng!</p>
+      </div>
+     </div>
+    </div><!-- Compare Tab -->
+    <div id="content-compare" class="tab-content hidden">
+     <div class="bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">📈 So sánh Kịch bản</h2>
+      <p class="text-gray-600 mb-4">So sánh các kịch bản đã lưu</p>
+      <div class="text-center text-gray-500 py-12">
+       Chọn kịch bản ở tab "Kịch bản Đã lưu" để so sánh
+      </div>
+     </div>
+    </div><!-- Dictionary Tab -->
+    <div id="content-dictionary" class="tab-content hidden">
+     <div class="bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">📖 Từ điển Thuật ngữ Khí hậu</h2>
+      <p class="text-gray-600 mb-6">Giải thích các thuật ngữ khoa học được sử dụng trong ứng dụng</p><!-- Search Box -->
+      <div class="mb-6"><input type="text" id="dictionary-search" placeholder="🔍 Tìm kiếm thuật ngữ..." class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div><!-- Dictionary Terms -->
+      <div id="dictionary-list" class="space-y-4"><!-- Terms will be rendered here -->
+      </div>
+     </div>
+    </div><!-- Feedback Loops Tab -->
+    <div id="content-feedback" class="tab-content hidden">
+     <div class="bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">🔄 Vòng phản hồi Khí hậu</h2>
+      <p class="text-gray-600 mb-6">Khám phá các vòng phản hồi âm và dương ảnh hưởng đến biến đổi khí hậu</p><!-- Feedback Loop Type Selector -->
+      <div class="flex gap-4 mb-6"><button id="show-positive" class="flex-1 px-6 py-3 bg-red-600 text-white font-bold rounded-lg transition hover:bg-red-700"> ⚠️ Phản hồi Dương (Tăng cường) </button> <button id="show-negative" class="flex-1 px-6 py-3 bg-blue-600 text-white font-bold rounded-lg transition hover:bg-blue-700"> ✅ Phản hồi Âm (Ổn định) </button>
+      </div><!-- Feedback Loops Container -->
+      <div id="feedback-loops-container"><!-- Loops will be rendered here -->
+      </div>
+     </div>
+    </div><!-- Quiz Tab -->
+    <div id="content-quiz" class="tab-content hidden">
+     <div class="bg-white rounded-xl shadow-lg p-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">🎯 Quiz Kiến thức Khí hậu</h2>
+      <p class="text-gray-600 mb-6">Kiểm tra kiến thức của bạn về biến đổi khí hậu</p><!-- Quiz Progress -->
+      <div class="mb-6">
+       <div class="flex justify-between items-center mb-2"><span class="text-sm font-semibold text-gray-700">Tiến độ: <span id="quiz-progress">0/10</span></span> <span class="text-sm font-semibold text-purple-700">Điểm: <span id="quiz-score">0</span></span>
+       </div>
+       <div class="w-full bg-gray-300 rounded-full h-3">
+        <div id="quiz-progress-bar" class="bg-purple-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+       </div>
+      </div><!-- Quiz Question -->
+      <div id="quiz-container" class="bg-purple-50 p-6 rounded-lg">
+       <h3 id="quiz-question" class="text-lg font-bold mb-3">Đang tải câu hỏi...</h3>
+       <div id="quiz-options" class="space-y-2"><!-- Options will be inserted here -->
+       </div>
+       <div id="quiz-feedback" class="hidden mt-4 p-4 rounded-lg">
+        <p id="feedback-text" class="font-semibold mb-2"></p>
+        <p id="feedback-explanation" class="text-sm"></p>
+       </div>
+      </div><!-- Quiz Result -->
+      <div id="quiz-result" class="hidden mt-6 p-6 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg">
+       <h3 class="text-2xl font-bold text-center mb-4">🎉 Hoàn thành Quiz!</h3>
+       <p class="text-center text-3xl font-bold text-purple-700 mb-4">Điểm: <span id="final-score">0</span>/10</p>
+       <div id="achievement-box" class="text-center mb-4">
+        <p class="text-5xl mb-2" id="achievement-icon">🏆</p>
+        <p class="text-xl font-bold text-purple-800" id="achievement-title">Danh hiệu</p>
+        <p class="text-sm text-gray-700" id="achievement-desc">Mô tả thành tích</p>
+       </div><button id="restart-quiz" class="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition"> 🔄 Làm lại Quiz </button>
+      </div><!-- Next Button --> <button id="next-question" class="hidden w-full mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition"> Câu tiếp theo ➡️ </button>
+     </div>
+    </div>
+   </main>
+  </div>
+  <script>
+    const defaultConfig = {
+      background_color: "#667eea",
+      surface_color: "#ffffff",
+      text_color: "#1f2937",
+      primary_action_color: "#2563eb",
+      secondary_action_color: "#10b981",
+      font_family: "sans-serif",
+      font_size: 16,
+      app_title: "Mô phỏng Biến đổi Khí hậu",
+      app_subtitle: "Công cụ mô phỏng biến đổi khí hậu tương tác"
+    };
+
+    let scenarios = [];
+    let predictionChart;
+    let historicalChart;
+    let solutionsChart;
+    
+    // Timeline state
+    let currentYear = 2024;
+    let timelineTemp = 1.2;
+    let timelineCO2 = 420;
+    let yearEvents = {}; // Store events for each year
+    
+    // Solutions state
+    let activeSolutions = {
+      renewable: false,
+      reforestation: false,
+      electric: false
+    };
+
+    // Quiz state
+    let currentQuestionIndex = 0;
+    let quizScore = 0;
+    let selectedAnswer = null;
+
+    // Dictionary terms data
+    const dictionaryTerms = [
+      {
+        term: "CO₂ (Carbon Dioxide)",
+        category: "Khí nhà kính",
+        definition: "Khí carbon dioxide, là khí nhà kính chính gây ra hiệu ứng nhà kính và biến đổi khí hậu.",
+        details: "CO₂ được thải ra từ việc đốt nhiên liệu hóa thạch, phá rừng và các hoạt động công nghiệp. Nồng độ hiện tại là 420 ppm (parts per million), cao nhất trong 800,000 năm qua.",
+        icon: "💨"
+      },
+      {
+        term: "ppm (Parts Per Million)",
+        category: "Đơn vị đo",
+        definition: "Đơn vị đo nồng độ khí trong khí quyển, nghĩa là số phần trong một triệu phần.",
+        details: "Ví dụ: 420 ppm CO₂ có nghĩa là trong 1 triệu phân tử không khí, có 420 phân tử CO₂.",
+        icon: "📊"
+      },
+      {
+        term: "Độ lệch nhiệt độ (Temperature Anomaly)",
+        category: "Nhiệt độ",
+        definition: "Sự chênh lệch giữa nhiệt độ hiện tại và nhiệt độ trung bình trong thời kỳ tham chiếu.",
+        details: "Thường so sánh với thời kỳ tiền công nghiệp (1850-1900). Độ lệch +1.2°C nghĩa là Trái đất nóng hơn 1.2°C so với thời kỳ đó.",
+        icon: "🌡️"
+      },
+      {
+        term: "Hiệu ứng nhà kính",
+        category: "Hiện tượng",
+        definition: "Hiện tượng các khí trong khí quyển giữ nhiệt, làm ấm bề mặt Trái đất.",
+        details: "Giống như một chiếc lều kính, các khí nhà kính cho phép ánh sáng mặt trời đi qua nhưng giữ lại nhiệt, làm nóng hành tinh. Đây là hiện tượng tự nhiên, nhưng hoạt động con người đang làm tăng cường nó.",
+        icon: "🏠"
+      },
+      {
+        term: "Thời kỳ tiền công nghiệp",
+        category: "Lịch sử",
+        definition: "Khoảng thời gian trước khi Cách mạng Công nghiệp bắt đầu (trước năm 1850).",
+        details: "Được dùng làm mốc tham chiếu để đo lường tác động của con người đến khí hậu. Thời kỳ này khí hậu còn tương đối ổn định.",
+        icon: "⏰"
+      },
+      {
+        term: "Hiệp định Paris",
+        category: "Chính sách",
+        definition: "Hiệp định quốc tế về biến đổi khí hậu được ký kết năm 2015.",
+        details: "Mục tiêu: Giữ mức tăng nhiệt độ toàn cầu dưới 2°C, tốt nhất là 1.5°C so với thời kỳ tiền công nghiệp. 196 quốc gia đã tham gia.",
+        icon: "📜"
+      },
+      {
+        term: "Mực nước biển dâng",
+        category: "Tác động",
+        definition: "Hiện tượng mực nước biển toàn cầu tăng cao do băng tan và nước nóng giãn nở.",
+        details: "Từ năm 1880, mực nước biển đã dâng trung bình 20cm. Dự đoán có thể dâng thêm 30-100cm vào năm 2100, đe dọa các thành phố ven biển.",
+        icon: "🌊"
+      },
+      {
+        term: "Băng tan cực",
+        category: "Tác động",
+        definition: "Hiện tượng băng ở Bắc Cực và Nam Cực tan chảy do nhiệt độ tăng.",
+        details: "Băng tan làm giảm hiệu ứng phản chiếu (albedo), khiến Trái đất hấp thụ nhiều nhiệt hơn, tạo vòng lặp phản hồi dương. Cùng đóng góp vào mực nước biển dâng.",
+        icon: "🧊"
+      },
+      {
+        term: "Hiệu ứng Albedo",
+        category: "Hiện tượng",
+        definition: "Khả năng phản chiếu ánh sáng mặt trời của bề mặt Trái đất.",
+        details: "Băng và tuyết có albedo cao (phản chiếu nhiều ánh sáng), còn đại dương và đất có albedo thấp (hấp thụ nhiều nhiệt). Khi băng tan, albedo giảm, Trái đất hấp thụ nhiều nhiệt hơn.",
+        icon: "☀️"
+      },
+      {
+        term: "Năng lượng tái tạo",
+        category: "Giải pháp",
+        definition: "Năng lượng từ các nguồn tự nhiên có thể tái tạo như mặt trời, gió, nước.",
+        details: "Không thải CO₂ trong quá trình sử dụng. Bao gồm: năng lượng mặt trời, gió, thủy điện, địa nhiệt, sinh khối. Là giải pháp quan trọng để giảm phát thải.",
+        icon: "⚡"
+      },
+      {
+        term: "Phá rừng (Deforestation)",
+        category: "Nguyên nhân",
+        definition: "Việc chặt phá rừng để lấy đất trồng trọt, chăn nuôi hoặc xây dựng.",
+        details: "Rừng hấp thụ CO₂ qua quá trình quang hợp. Khi bị chặt phá, CO₂ bị giải phóng trở lại khí quyển, đồng thời mất đi 'bể chứa carbon' tự nhiên.",
+        icon: "🌳"
+      },
+      {
+        term: "Trồng cây (Reforestation)",
+        category: "Giải pháp",
+        definition: "Việc trồng cây để phục hồi các khu rừng đã bị phá.",
+        details: "Cây xanh hấp thụ CO₂ từ khí quyển qua quá trình quang hợp, giúp giảm nồng độ khí nhà kính. Cũng giúp bảo vệ đa dạng sinh học và điều hòa khí hậu địa phương.",
+        icon: "🌱"
+      },
+      {
+        term: "Nhiên liệu hóa thạch",
+        category: "Nguyên nhân",
+        definition: "Các nhiên liệu như than đá, dầu mỏ, khí đốt tự nhiên được hình thành từ sinh vật cổ đại.",
+        details: "Khi đốt cháy, nhiên liệu hóa thạch giải phóng CO₂ đã bị 'giam giữ' hàng triệu năm. Là nguồn phát thải CO₂ lớn nhất của con người, chiếm khoảng 75% tổng phát thải.",
+        icon: "🛢️"
+      },
+      {
+        term: "Xe điện (Electric Vehicles)",
+        category: "Giải pháp",
+        definition: "Phương tiện giao thông sử dụng động cơ điện thay vì động cơ đốt trong.",
+        details: "Không thải CO₂ trực tiếp khi vận hành. Nếu sạc bằng năng lượng tái tạo, có thể giảm phát thải gần 100% so với xe xăng. Là giải pháp quan trọng cho giao thông xanh.",
+        icon: "🚗"
+      },
+      {
+        term: "Bão nhiệt đới",
+        category: "Tác động",
+        definition: "Hệ thống bão mạnh hình thành trên biển nhiệt đới với gió xoáy và mưa lớn.",
+        details: "Biến đổi khí hậu làm bão mạnh hơn do nhiệt độ nước biển tăng cung cấp nhiều năng lượng hơn. Tần suất bão cấp 4-5 đang gia tăng.",
+        icon: "🌀"
+      },
+      {
+        term: "Cháy rừng",
+        category: "Tác động",
+        definition: "Đám cháy lan rộng trên diện tích rừng lớn, thường do thời tiết khô hạn.",
+        details: "Biến đổi khí hậu làm tăng nguy cơ cháy rừng do nhiệt độ cao và hạn hán. Cháy rừng giải phóng lượng CO₂ khổng lồ, tạo vòng lặp phản hồi nguy hiểm.",
+        icon: "🔥"
+      },
+      {
+        term: "Hạn hán",
+        category: "Tác động",
+        definition: "Thời kỳ kéo dài thiếu mưa và khan hiếm nước.",
+        details: "Biến đổi khí hậu làm thay đổi mô hình mưa, gây hạn hán kéo dài ở nhiều khu vực. Ảnh hưởng nghiêm trọng đến nông nghiệp, nguồn nước và sinh thái.",
+        icon: "🏜️"
+      },
+      {
+        term: "Tẩy trắng san hô",
+        category: "Tác động",
+        definition: "Hiện tượng san hô mất màu và chết do nước biển nóng lên.",
+        details: "San hô sống cộng sinh với tảo (algae) tạo màu sắc. Khi nước quá nóng, san hô đuổi tảo đi, trở nên trắng và chết. Rạn san hô là nhà của 25% sinh vật biển.",
+        icon: "🐠"
+      },
+      {
+        term: "Điểm không thể quay lại (Tipping Point)",
+        category: "Hiện tượng",
+        definition: "Ngưỡng mà khi vượt qua, thay đổi khí hậu trở nên không thể đảo ngược.",
+        details: "Ví dụ: Băng Greenland tan hoàn toàn, dòng hải lưu Atlantic đổi chiều, rừng Amazon chuyển thành thảo nguyên. Một khi đạt điểm này, quá trình tự tiếp diễn không cần thêm phát thải.",
+        icon: "⚠️"
+      },
+      {
+        term: "Vòng lặp phản hồi dương",
+        category: "Hiện tượng",
+        definition: "Quá trình mà sự thay đổi ban đầu tạo ra hiệu ứng tự củng cố, làm thay đổi càng mạnh hơn.",
+        details: "Ví dụ: Băng tan → Albedo giảm → Hấp thụ nhiều nhiệt → Băng tan nhiều hơn. Hoặc: Nóng lên → Rừng cháy → Thải CO₂ → Nóng lên hơn.",
+        icon: "🔄"
+      },
+      {
+        term: "Vòng lặp phản hồi âm",
+        category: "Hiện tượng",
+        definition: "Quá trình tự điều chỉnh giúp giảm bớt sự thay đổi ban đầu, tạo sự ổn định cho hệ thống.",
+        details: "Ví dụ: Nhiệt độ tăng → Mây tăng → Phản chiếu ánh sáng mặt trời → Nhiệt độ giảm. Hoặc: CO₂ tăng → Cây phát triển nhanh hơn → Hấp thụ nhiều CO₂ → CO₂ giảm. Phản hồi âm giúp điều hòa khí hậu nhưng có giới hạn.",
+        icon: "⚖️"
+      },
+      {
+        term: "Khí metan (CH₄)",
+        category: "Khí nhà kính",
+        definition: "Khí nhà kính mạnh gấp 25 lần CO₂ trong việc giữ nhiệt.",
+        details: "Được thải ra từ chăn nuôi gia súc, ruộng lúa, bãi rác, và khai thác khí đốt. Tuy ít hơn CO₂ nhưng tác động mạnh hơn nhiều.",
+        icon: "🐄"
+      },
+      {
+        term: "Bể chứa carbon (Carbon Sink)",
+        category: "Hiện tượng",
+        definition: "Hệ thống tự nhiên hấp thụ và lưu trữ CO₂ từ khí quyển.",
+        details: "Các bể chứa carbon chính: Rừng (cây xanh), đại dương (nước biển hấp thụ CO₂), đất (chất hữu cơ). Bảo vệ các bể chứa này rất quan trọng để giảm CO₂.",
+        icon: "🏠"
+      },
+      {
+        term: "Phát thải ròng bằng 0 (Net Zero)",
+        category: "Mục tiêu",
+        definition: "Trạng thái cân bằng giữa lượng CO₂ thải ra và lượng CO₂ được hấp thụ.",
+        details: "Mục tiêu toàn cầu để ngăn chặn biến đổi khí hậu. Nhiều quốc gia cam kết đạt net zero vào năm 2050-2060. Cần giảm phát thải và tăng hấp thụ CO₂.",
+        icon: "🎯"
+      },
+      {
+        term: "Sa mạc hóa",
+        category: "Tác động",
+        definition: "Quá trình đất màu mỡ trở thành sa mạc do hạn hán và sử dụng đất không bền vững.",
+        details: "Biến đổi khí hậu tăng cường sa mạc hóa thông qua hạn hán kéo dài và nhiệt độ cao. Ảnh hưởng đến hàng triệu người ở châu Phi, châu Á và Trung Đông.",
+        icon: "🏜️"
+      }
+    ];
+
+    const quizQuestions = [
+      {
+        question: "Nồng độ CO₂ trong khí quyển hiện tại là bao nhiêu?",
+        options: ["280 ppm", "350 ppm", "420 ppm", "500 ppm"],
+        correct: 2,
+        explanation: "Nồng độ CO₂ hiện tại là 420 ppm, cao nhất trong 800,000 năm qua."
+      },
+      {
+        question: "Nhiệt độ trung bình toàn cầu đã tăng bao nhiêu kể từ thời kỳ tiền công nghiệp?",
+        options: ["+0.5°C", "+1.2°C", "+2.0°C", "+3.5°C"],
+        correct: 1,
+        explanation: "Nhiệt độ trái đất đã tăng khoảng 1.2°C so với thời kỳ tiền công nghiệp (1850-1900)."
+      },
+      {
+        question: "Hiệp định Paris đặt mục tiêu giới hạn mức tăng nhiệt độ toàn cầu ở mức nào?",
+        options: ["Dưới 1.5°C", "Dưới 2°C", "Dưới 3°C", "Dưới 5°C"],
+        correct: 1,
+        explanation: "Hiệp định Paris nhằm giữ mức tăng nhiệt độ dưới 2°C, tốt nhất là 1.5°C."
+      },
+      {
+        question: "Nguồn năng lượng nào sau đây không thải ra khí nhà kính?",
+        options: ["Than đá", "Khí đốt tự nhiên", "Năng lượng mặt trời", "Dầu mỏ"],
+        correct: 2,
+        explanation: "Năng lượng mặt trời là năng lượng tái tạo sạch, không thải CO₂."
+      },
+      {
+        question: "Mực nước biển đã dâng cao bao nhiêu kể từ năm 1880?",
+        options: ["+5 cm", "+20 cm", "+50 cm", "+100 cm"],
+        correct: 1,
+        explanation: "Mực nước biển đã tăng trung bình 20 cm kể từ năm 1880 và đang tăng nhanh hơn."
+      },
+      {
+        question: "Khí nhà kính nào có tác động mạnh nhất đến biến đổi khí hậu?",
+        options: ["Oxy (O₂)", "Carbon Dioxide (CO₂)", "Nitrogen (N₂)", "Hydro (H₂)"],
+        correct: 1,
+        explanation: "CO₂ là khí nhà kính chính gây ra hiệu ứng nhà kính và biến đổi khí hậu."
+      },
+      {
+        question: "Hoạt động nào sau đây góp phần lớn nhất vào phát thải CO₂?",
+        options: ["Trồng trọt", "Đốt nhiên liệu hóa thạch", "Chăn nuôi", "Xây dựng"],
+        correct: 1,
+        explanation: "Đốt nhiên liệu hóa thạch (than, dầu, khí đốt) là nguồn phát thải CO₂ lớn nhất."
+      },
+      {
+        question: "Rừng Amazon đóng vai trò gì trong việc điều hòa khí hậu?",
+        options: ["Thải CO₂", "Hấp thụ CO₂", "Tạo ra khí metan", "Không có tác động"],
+        correct: 1,
+        explanation: "Rừng Amazon hấp thụ hàng tỷ tấn CO₂, được gọi là 'lá phổi của Trái đất'."
+      },
+      {
+        question: "Hiện tượng nào sau đây KHÔNG phải là hậu quả của biến đổi khí hậu?",
+        options: ["Băng tan ở hai cực", "Bão nhiệt đới mạnh hơn", "Động đất tăng", "Mực nước biển dâng"],
+        correct: 2,
+        explanation: "Động đất không liên quan đến biến đổi khí hậu, nó do hoạt động kiến tạo mảng."
+      },
+      {
+        question: "Giải pháp nào sau đây giúp giảm phát thải CO₂ hiệu quả nhất?",
+        options: ["Chuyển sang xe điện", "Trồng cây", "Năng lượng tái tạo", "Tất cả đều quan trọng"],
+        correct: 3,
+        explanation: "Tất cả các giải pháp đều quan trọng và cần kết hợp để đối phó với biến đổi khí hậu."
+      }
+    ];
+
+    // Feedback loops data
+    const positiveFeedbackLoops = [
+      {
+        name: "Hiệu ứng Albedo - Băng tan",
+        icon: "🧊",
+        steps: [
+          { text: "Nhiệt độ tăng", icon: "🌡️", color: "bg-red-100" },
+          { text: "Băng cực và tuyết tan", icon: "❄️", color: "bg-blue-100" },
+          { text: "Bề mặt tối màu lộ ra", icon: "🌑", color: "bg-gray-700 text-white" },
+          { text: "Hấp thụ nhiều ánh sáng mặt trời", icon: "☀️", color: "bg-yellow-100" },
+          { text: "Nhiệt độ tăng thêm", icon: "🔥", color: "bg-red-200" }
+        ],
+        description: "Băng và tuyết có màu trắng phản chiếu 80-90% ánh sáng. Khi tan, đất và nước tối màu chỉ phản chiếu 10-20%, hấp thụ nhiều nhiệt hơn, làm băng tan nhanh hơn.",
+        impact: "Rất cao",
+        timescale: "Thập kỷ"
+      },
+      {
+        name: "Giải phóng Khí Metan từ Vùng đất đóng băng",
+        icon: "💨",
+        steps: [
+          { text: "Nhiệt độ tăng", icon: "🌡️", color: "bg-red-100" },
+          { text: "Permafrost (đất đóng băng vĩnh cửu) tan", icon: "🏔️", color: "bg-brown-100" },
+          { text: "Giải phóng khí metan CH₄", icon: "💨", color: "bg-green-100" },
+          { text: "Metan giữ nhiệt gấp 25 lần CO₂", icon: "🔥", color: "bg-orange-100" },
+          { text: "Nhiệt độ tăng nhanh hơn", icon: "📈", color: "bg-red-200" }
+        ],
+        description: "Vùng permafrost chứa hàng tỷ tấn carbon bị đóng băng. Khi tan, vi khuẩn phân hủy chất hữu cơ và thải ra metan - khí nhà kính cực mạnh.",
+        impact: "Rất cao",
+        timescale: "Thập kỷ đến thế kỷ"
+      },
+      {
+        name: "Cháy rừng",
+        icon: "🔥",
+        steps: [
+          { text: "Nhiệt độ tăng, khô hạn", icon: "🌡️", color: "bg-red-100" },
+          { text: "Rừng khô, dễ cháy", icon: "🌳", color: "bg-yellow-100" },
+          { text: "Cháy rừng quy mô lớn", icon: "🔥", color: "bg-orange-200" },
+          { text: "Giải phóng CO₂ khổng lồ", icon: "💨", color: "bg-gray-200" },
+          { text: "Nhiệt độ tăng cao hơn", icon: "📈", color: "bg-red-200" }
+        ],
+        description: "Cây xanh là bể chứa carbon. Khi cháy, carbon được giải phóng trở lại khí quyển. Đồng thời mất đi khả năng hấp thụ CO₂ trong tương lai.",
+        impact: "Cao",
+        timescale: "Năm đến thập kỷ"
+      },
+      {
+        name: "Hơi nước trong Khí quyển",
+        icon: "💧",
+        steps: [
+          { text: "Nhiệt độ tăng", icon: "🌡️", color: "bg-red-100" },
+          { text: "Nước biển bốc hơi nhiều hơn", icon: "🌊", color: "bg-blue-100" },
+          { text: "Hơi nước tăng trong khí quyển", icon: "☁️", color: "bg-gray-100" },
+          { text: "Hơi nước là khí nhà kính", icon: "🏠", color: "bg-purple-100" },
+          { text: "Giữ nhiệt tốt hơn", icon: "🔥", color: "bg-red-200" }
+        ],
+        description: "Hơi nước là khí nhà kính tự nhiên mạnh nhất. Nhiệt độ càng cao, càng nhiều nước bốc hơi, tạo vòng lặp tự tăng cường.",
+        impact: "Rất cao",
+        timescale: "Ngày đến tháng"
+      },
+      {
+        name: "Giảm Hấp thụ CO₂ của Đại dương",
+        icon: "🌊",
+        steps: [
+          { text: "Nhiệt độ nước biển tăng", icon: "🌡️", color: "bg-red-100" },
+          { text: "Khả năng hòa tan CO₂ giảm", icon: "💨", color: "bg-blue-100" },
+          { text: "CO₂ tích tụ trong khí quyển", icon: "☁️", color: "bg-gray-200" },
+          { text: "Hiệu ứng nhà kính tăng", icon: "   ", color: "bg-orange-100" },
+          { text: "Nhiệt độ tăng cao hơn", icon: "📈", color: "bg-red-200" }
+        ],
+        description: "Đại dương hấp thụ 25% CO₂ do con người thải ra. Nước ấm hòa tan CO₂ kém hơn nước lạnh, làm giảm khả năng hấp thụ carbon của biển.",
+        impact: "Cao",
+        timescale: "Thập kỷ"
+      },
+      {
+        name: "Suy giảm Amazon",
+        icon: "🌳",
+        steps: [
+          { text: "Hạn hán và nhiệt độ cao", icon: "🌡️", color: "bg-red-100" },
+          { text: "Cây chết, rừng suy thoái", icon: "🪵", color: "bg-brown-100" },
+          { text: "Giảm lượng mưa (cây tạo mưa)", icon: "☁️", color: "bg-gray-200" },
+          { text: "Hạn hán trầm trọng hơn", icon: "🏜️", color: "bg-yellow-200" },
+          { text: "Rừng chuyển thành thảo nguyên", icon: "🌾", color: "bg-green-100" }
+        ],
+        description: "Rừng Amazon tạo ra mưa cho chính nó. Khi cây chết, mưa giảm, gây hạn hán nhiều hơn. Điểm tới hạn: mất 20-25% diện tích rừng.",
+        impact: "Rất cao",
+        timescale: "Thập kỷ đến thế kỷ"
+      }
+    ];
+
+    const negativeFeedbackLoops = [
+      {
+        name: "Hình thành Mây",
+        icon: "☁️",
+        steps: [
+          { text: "Nhiệt độ tăng", icon: "🌡️", color: "bg-red-100" },
+          { text: "Bốc hơi nước nhiều hơn", icon: "💧", color: "bg-blue-100" },
+          { text: "Mây hình thành dày hơn", icon: "☁️", color: "bg-gray-100" },
+          { text: "Phản chiếu ánh sáng mặt trời", icon: "☀️", color: "bg-yellow-100" },
+          { text: "Nhiệt độ giảm xuống", icon: "❄️", color: "bg-blue-200" }
+        ],
+        description: "Mây trắng phản chiếu ánh sáng mặt trời trở lại không gian, giảm lượng nhiệt đến bề mặt Trái đất. Tuy nhiên, hiệu ứng này phức tạp và phụ thuộc vào loại mây.",
+        impact: "Trung bình",
+        timescale: "Giờ đến ngày",
+        note: "⚠️ Lưu ý: Mây cao (cirrus) lại có tác dụng giữ nhiệt, tạo phản hồi dương. Chỉ mây thấp (cumulus) mới có phản hồi âm mạnh."
+      },
+      {
+        name: "Tăng cường Quang hợp",
+        icon: "🌱",
+        steps: [
+          { text: "CO₂ trong khí quyển tăng", icon: "💨", color: "bg-gray-100" },
+          { text: "Cây có nhiều CO₂ để quang hợp", icon: "🌿", color: "bg-green-100" },
+          { text: "Cây phát triển nhanh hơn", icon: "🌳", color: "bg-green-200" },
+          { text: "Hấp thụ nhiều CO₂ từ khí quyển", icon: "📉", color: "bg-blue-100" },
+          { text: "Nồng độ CO₂ giảm", icon: "✅", color: "bg-green-300" }
+        ],
+        description: "CO₂ là 'thức ăn' cho cây. Khi nồng độ CO₂ cao, cây phát triển nhanh và hấp thụ nhiều carbon hơn. Hiệu ứng này gọi là 'CO₂ fertilization'.",
+        impact: "Trung bình",
+        timescale: "Năm đến thập kỷ",
+        note: "⚠️ Giới hạn: Cây cần nước, dinh dưỡng và điều kiện khí hậu phù hợp. Hiệu ứng này không đủ để cân bằng phát thải của con người."
+      },
+      {
+        name: "Bức xạ Nhiệt ra Không gian",
+        icon: "🌍",
+        steps: [
+          { text: "Nhiệt độ Trái đất tăng", icon: "🌡️", color: "bg-red-100" },
+          { text: "Bức xạ hồng ngoại tăng", icon: "📡", color: "bg-purple-100" },
+          { text: "Nhiều nhiệt thoát ra không gian", icon: "🌌", color: "bg-blue-900 text-white" },
+          { text: "Mất nhiệt nhanh hơn", icon: "❄️", color: "bg-blue-100" },
+          { text: "Nhiệt độ giảm dần", icon: "📉", color: "bg-green-200" }
+        ],
+        description: "Theo định luật Stefan-Boltzmann, vật càng nóng càng phát ra nhiều bức xạ. Trái đất nóng lên sẽ tỏa nhiều nhiệt ra không gian.",
+        impact: "Thấp đến Trung bình",
+        timescale: "Ngay lập tức",
+        note: "⚠️ Giới hạn: Khí nhà kính chặn bức xạ nhiệt, làm giảm hiệu quả của phản hồi này. Đây là vấn đề cốt lõi của hiệu ứng nhà kính."
+      },
+      {
+        name: "Hòa tan CO₂ vào Đại dương",
+        icon: "🌊",
+        steps: [
+          { text: "CO₂ trong khí quyển tăng", icon: "💨", color: "bg-gray-100" },
+          { text: "Gradien nồng độ tăng", icon: "⚖️", color: "bg-blue-100" },
+          { text: "Đại dương hấp thụ nhiều CO₂", icon: "🌊", color: "bg-blue-200" },
+          { text: "CO₂ khí quyển giảm", icon: "📉", color: "bg-green-100" },
+          { text: "Hiệu ứng nhà kính giảm", icon: "✅", color: "bg-green-200" }
+        ],
+        description: "Đại dương hấp thụ khoảng 25% CO₂ do con người thải ra mỗi năm, giúp giảm tốc độ tăng nhiệt độ.",
+        impact: "Cao",
+        timescale: "Năm đến thập kỷ",
+        note: "⚠️ Hậu quả: CO₂ hòa tan tạo acid carbonic, làm axit hóa đại dương, gây hại cho san hô và sinh vật có vỏ."
+      },
+      {
+        name: "Phong hóa Đá (Silicate Weathering)",
+        icon: "🪨",
+        steps: [
+          { text: "Nhiệt độ và mưa tăng", icon: "🌧️", color: "bg-blue-100" },
+          { text: "Phong hóa hóa học đá tăng", icon: "🪨", color: "bg-gray-200" },
+          { text: "CO₂ bị hấp thụ trong phản ứng", icon: "⚗️", color: "bg-purple-100" },
+          { text: "CO₂ khí quyển giảm", icon: "📉", color: "bg-green-100" },
+          { text: "Nhiệt độ giảm", icon: "❄️", color: "bg-blue-200" }
+        ],
+        description: "Mưa và nhiệt phản ứng với đá silicate, hấp thụ CO₂. Đây là quá trình điều hòa khí hậu Trái đất trong hàng triệu năm.",
+        impact: "Rất cao",
+        timescale: "Hàng nghìn đến triệu năm",
+        note: "⚠️ Quá chậm: Phản hồi này mất hàng nghìn năm, không kịp đối phó với biến đổi khí hậu hiện tại."
+      }
+    ];
+
+    const achievements = [
+      {
+        minScore: 0,
+        icon: "🌱",
+        title: "Người mới bắt đầu",
+        description: "Bạn cần tìm hiểu thêm về biến đổi khí hậu!"
+      },
+      {
+        minScore: 3,
+        icon: "🌿",
+        title: "Học viên Khí hậu",
+        description: "Bạn đã có kiến thức cơ bản về khí hậu!"
+      },
+      {
+        minScore: 5,
+        icon: "🌳",
+        title: "Chiến binh Môi trường",
+        description: "Bạn hiểu rõ về vấn đề biến đổi khí hậu!"
+      },
+      {
+        minScore: 7,
+        icon: "🌍",
+        title: "Chuyên gia Khí hậu",
+        description: "Kiến thức của bạn rất ấn tượng!"
+      },
+      {
+        minScore: 9,
+        icon: "🏆",
+        title: "Bậc thầy Khí hậu",
+        description: "Bạn là chuyên gia hàng đầu về biến đổi khí hậu!"
+      },
+      {
+        minScore: 10,
+        icon: "🌟",
+        title: "Siêu sao Khí hậu",
+        description: "Hoàn hảo! Bạn là người hùng của Trái đất!"
+      }
+    ];
+
+    const climateEvents = [
+      {
+        name: "🌊 Siêu bão nhiệt đới",
+        description: "Một cơn bão mạnh cấp 5 tấn công vùng ven biển",
+        tempImpact: 0.05,
+        co2Impact: 5,
+        icon: "🌀"
+      },
+      {
+        name: "🔥 Cháy rừng quy mô lớn",
+        description: "Hàng triệu hecta rừng bị thiêu rụi, thải CO₂ khổng lồ",
+        tempImpact: 0.08,
+        co2Impact: 15,
+        icon: "🔥"
+      },
+      {
+        name: "❄️ Băng tan ở Bắc Cực",
+        description: "Băng Bắc Cực tan với tốc độ kỷ lục",
+        tempImpact: 0.06,
+        co2Impact: 8,
+        icon: "🧊"
+      },
+      {
+        name: "🌡️ Nắng nóng kỷ lục",
+        description: "Sóng nhiệt kéo dài hơn 3 tháng ở nhiều châu lục",
+        tempImpact: 0.07,
+        co2Impact: 10,
+        icon: "☀️"
+      },
+      {
+        name: "🌧️ Lũ lụt nghiêm trọng",
+        description: "Mưa lớn gây lũ quét và ngập lụt diện rộng",
+        tempImpact: 0.04,
+        co2Impact: 6,
+        icon: "💧"
+      },
+      {
+        name: "🧊 Sạt lở băng hà",
+        description: "Các dòng băng hà sụp đổ với quy mô chưa từng thấy",
+        tempImpact: 0.05,
+        co2Impact: 7,
+        icon: "⛰️"
+      },
+      {
+        name: "🌾 Hạn hán kéo dài",
+        description: "Thiếu nước nghiêm trọng ảnh hưởng nông nghiệp toàn cầu",
+        tempImpact: 0.06,
+        co2Impact: 9,
+        icon: "🏜️"
+      },
+      {
+        name: "🦠 Dịch bệnh từ khí hậu",
+        description: "Nhiệt độ tăng làm bùng phát dịch bệnh nhiệt đới",
+        tempImpact: 0.03,
+        co2Impact: 4,
+        icon: ""
+      }
+    ];
+
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function adjustColor(color, percent) {
+      const num = parseInt(color.replace("#",""), 16);
+      const amt = Math.round(2.55 * percent);
+      const R = (num >> 16) + amt;
+      const G = (num >> 8 & 0x00FF) + amt;
+      const B = (num & 0x0000FF) + amt;
+      return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 +
+        (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255))
+        .toString(16).slice(1);
+    }
+
+    async function initializeApp() {
+      if (window.elementSdk) {
+        await window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (config) => {
+            const app = document.getElementById('app');
+            app.style.background = `linear-gradient(135deg, ${config.background_color || defaultConfig.background_color} 0%, ${adjustColor(config.background_color || defaultConfig.background_color, -20)} 100%)`;
+            
+            const surfaces = document.querySelectorAll('.bg-white');
+            surfaces.forEach(surface => {
+              surface.style.backgroundColor = config.surface_color || defaultConfig.surface_color;
+            });
+
+            document.getElementById('main-title').textContent = config.app_title || defaultConfig.app_title;
+            document.getElementById('main-subtitle').textContent = config.app_subtitle || defaultConfig.app_subtitle;
+
+            const customFont = config.font_family || defaultConfig.font_family;
+            document.body.style.fontFamily = `${customFont}, Arial, sans-serif`;
+
+            const baseSize = config.font_size || defaultConfig.font_size;
+            document.getElementById('main-title').style.fontSize = `${baseSize * 2.25}px`;
+            document.getElementById('main-subtitle').style.fontSize = `${baseSize}px`;
+          },
+          mapToCapabilities: (config) => ({
+            recolorables: [
+              {
+                get: () => config.background_color || defaultConfig.background_color,
+                set: (value) => {
+                  window.elementSdk.config.background_color = value;
+                  window.elementSdk.setConfig({ background_color: value });
+                }
+              },
+              {
+                get: () => config.surface_color || defaultConfig.surface_color,
+                set: (value) => {
+                  window.elementSdk.config.surface_color = value;
+                  window.elementSdk.setConfig({ surface_color: value });
+                }
+              },
+              {
+                get: () => config.text_color || defaultConfig.text_color,
+                set: (value) => {
+                  window.elementSdk.config.text_color = value;
+                  window.elementSdk.setConfig({ text_color: value });
+                }
+              },
+              {
+                get: () => config.primary_action_color || defaultConfig.primary_action_color,
+                set: (value) => {
+                  window.elementSdk.config.primary_action_color = value;
+                  window.elementSdk.setConfig({ primary_action_color: value });
+                }
+              },
+              {
+                get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+                set: (value) => {
+                  window.elementSdk.config.secondary_action_color = value;
+                  window.elementSdk.setConfig({ secondary_action_color: value });
+                }
+              }
+            ],
+            borderables: [],
+            fontEditable: {
+              get: () => config.font_family || defaultConfig.font_family,
+              set: (value) => {
+                window.elementSdk.config.font_family = value;
+                window.elementSdk.setConfig({ font_family: value });
+              }
+            },
+            fontSizeable: {
+              get: () => config.font_size || defaultConfig.font_size,
+              set: (value) => {
+                window.elementSdk.config.font_size = value;
+                window.elementSdk.setConfig({ font_size: value });
+              }
+            }
+          }),
+          mapToEditPanelValues: (config) => new Map([
+            ["app_title", config.app_title || defaultConfig.app_title],
+            ["app_subtitle", config.app_subtitle || defaultConfig.app_subtitle]
+          ])
+        });
+      }
+
+      const initResult = await window.dataSdk.init({
+        onDataChanged(data) {
+          scenarios = data;
+          renderScenariosList();
+        }
+      });
+
+      if (!initResult.isOk) {
+        console.error("Failed to initialize data SDK");
+      }
+
+      initializeChart();
+      setupEventListeners();
+      updatePredictions();
+      loadQuizQuestion();
+    }
+
+    function initializeChart() {
+      predictionChart = new Chart(document.getElementById('predictionChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: [2024, 2040, 2060, 2080, 2100],
+          datasets: [{
+            label: 'Nhiệt độ dự đoán (°C)',
+            data: [1.2, 1.5, 1.9, 2.2, 2.5],
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { display: true } }
+        }
+      });
+
+      // Historical data chart
+      const historicalYears = [];
+      const historicalTemps = [];
+      for (let year = 1880; year <= 2023; year += 10) {
+        historicalYears.push(year);
+        // Simplified historical data approximation
+        const baseTemp = -0.4;
+        const increase = ((year - 1880) / 143) * 1.6;
+        historicalTemps.push(baseTemp + increase);
+      }
+
+      historicalChart = new Chart(document.getElementById('historicalChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: historicalYears,
+          datasets: [{
+            label: 'Độ lệch nhiệt độ (°C)',
+            data: historicalTemps,
+            borderColor: '#dc2626',
+            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: true }
+          },
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'Độ lệch nhiệt độ (°C)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Năm'
+              }
+            }
+          }
+        }
+      });
+
+      // Solutions comparison chart
+      solutionsChart = new Chart(document.getElementById('solutionsChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: [2024, 2040, 2060, 2080, 2100],
+          datasets: [
+            {
+              label: 'Không hành động',
+              data: [1.2, 1.5, 1.9, 2.2, 2.5],
+              borderColor: '#dc2626',
+              backgroundColor: 'rgba(220, 38, 38, 0.1)',
+              tension: 0.4
+            },
+            {
+              label: 'Với giải pháp',
+              data: [1.2, 1.5, 1.9, 2.2, 2.5],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: true }
+          },
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'Nhiệt độ (°C)'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    let currentFeedbackType = 'positive'; // Track which feedback loops to show
+
+    function setupEventListeners() {
+      const tabs = ['historical', 'simulation', 'solutions', 'timeline', 'scenarios', 'compare', 'quiz', 'dictionary', 'feedback'];
+      
+      tabs.forEach(tabName => {
+        const tabButton = document.getElementById(`tab-${tabName}`);
+        if (tabButton) {
+          tabButton.addEventListener('click', () => {
+            // Remove active state from all tabs
+            tabs.forEach(t => {
+              const btn = document.getElementById(`tab-${t}`);
+              if (btn) {
+                btn.classList.remove('text-blue-600', 'border-b-4', 'border-blue-600');
+                btn.classList.add('text-gray-600');
+              }
+              const content = document.getElementById(`content-${t}`);
+              if (content) {
+                content.classList.add('hidden');
+              }
+            });
+            
+            // Add active state to clicked tab
+            tabButton.classList.add('text-blue-600', 'border-b-4', 'border-blue-600');
+            tabButton.classList.remove('text-gray-600');
+            
+            const content = document.getElementById(`content-${tabName}`);
+            if (content) {
+              content.classList.remove('hidden');
+            }
+          });
+        }
+      });
+
+      ['co2-rate', 'temp-anomaly', 'ice-melt'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => updatePredictions());
+      });
+
+      // Timeline controls
+      document.getElementById('timeline-next').addEventListener('click', () => {
+        if (currentYear < 2100) {
+          currentYear++;
+          updateTimeline();
+        }
+      });
+
+      document.getElementById('timeline-prev').addEventListener('click', () => {
+        if (currentYear > 2024) {
+          currentYear--;
+          updateTimeline();
+        }
+      });
+
+      document.getElementById('timeline-reset').addEventListener('click', () => {
+        currentYear = 2024;
+        timelineTemp = 1.2;
+        timelineCO2 = 420;
+        yearEvents = {};
+        updateTimeline();
+      });
+
+      // Solution toggles
+      ['renewable', 'reforestation', 'electric'].forEach(solution => {
+        document.getElementById(`solution-${solution}`).addEventListener('click', () => {
+          activeSolutions[solution] = !activeSolutions[solution];
+          updateSolutionsUI();
+          updateSolutionsChart();
+        });
+      });
+
+      // Quiz event listeners
+      document.getElementById('next-question').addEventListener('click', () => {
+        currentQuestionIndex++;
+        selectedAnswer = null;
+        document.getElementById('next-question').classList.add('hidden');
+        document.getElementById('quiz-feedback').classList.add('hidden');
+        
+        if (currentQuestionIndex < quizQuestions.length) {
+          loadQuizQuestion();
+        } else {
+          showQuizResult();
+        }
+      });
+
+      document.getElementById('restart-quiz').addEventListener('click', () => {
+        currentQuestionIndex = 0;
+        quizScore = 0;
+        selectedAnswer = null;
+        document.getElementById('quiz-result').classList.add('hidden');
+        document.getElementById('quiz-container').classList.remove('hidden');
+        loadQuizQuestion();
+      });
+
+      // Dictionary search
+      document.getElementById('dictionary-search').addEventListener('input', (e) => {
+        renderDictionary(e.target.value);
+      });
+
+      // Feedback loops toggle
+      document.getElementById('show-positive').addEventListener('click', () => {
+        currentFeedbackType = 'positive';
+        updateFeedbackButtons();
+        renderFeedbackLoops();
+      });
+
+      document.getElementById('show-negative').addEventListener('click', () => {
+        currentFeedbackType = 'negative';
+        updateFeedbackButtons();
+        renderFeedbackLoops();
+      });
+
+      document.getElementById('save-scenario').addEventListener('click', async () => {
+        if (scenarios.length >= 999) {
+          document.getElementById('limit-warning').classList.remove('hidden');
+          setTimeout(() => {
+            document.getElementById('limit-warning').classList.add('hidden');
+          }, 3000);
+          return;
+        }
+
+        const scenarioName = document.getElementById('scenario-name').value.trim() || `Kịch bản ${scenarios.length + 1}`;
+        const co2Rate = parseFloat(document.getElementById('co2-rate').value);
+        const tempAnomaly = parseFloat(document.getElementById('temp-anomaly').value);
+        const iceMelt = parseFloat(document.getElementById('ice-melt').value);
+
+        const saveButton = document.getElementById('save-scenario');
+        saveButton.disabled = true;
+        saveButton.textContent = '⏳ Đang lưu...';
+
+        const result = await window.dataSdk.create({
+          scenario_name: scenarioName,
+          co2_increase_rate: co2Rate,
+          current_temp_anomaly: tempAnomaly,
+          ice_melt_rate: iceMelt,
+          created_at: new Date().toISOString(),
+          renewable_energy: false,
+          reforestation: false,
+          electric_vehicles: false
+        });
+
+        saveButton.disabled = false;
+        saveButton.textContent = '💾 Lưu kịch bản';
+
+        if (result.isOk) {
+          showToast('Đã lưu kịch bản thành công!');
+          document.getElementById('scenario-name').value = '';
+        } else {
+          showToast('Lỗi khi lưu kịch bản', 'error');
+        }
+      });
+    }
+
+    function getThreatLevel(temp) {
+      if (temp < 1.5) {
+        return {
+          level: 'Rất thấp',
+          icon: '🌍',
+          description: 'Tác động có thể kiểm soát được',
+          color: 'border-green-500 bg-green-50',
+          textColor: 'text-green-900',
+          events: ['🌱 Biến đổi nhẹ trong mô hình thời tiết', '🌊 Mực nước biển dâng chậm']
+        };
+      } else if (temp < 2.0) {
+        return {
+          level: 'Thấp',
+          icon: '🌎',
+          description: 'Bắt đầu có tác động đáng ch   ý',
+          color: 'border-blue-500 bg-blue-50',
+          textColor: 'text-blue-900',
+          events: ['🌊 Lũ lụt ven biển tăng', '🐠 San hô bắt đầu bị tẩy trắng', '❄️ Băng cực bắt đầu tan']
+        };
+      } else if (temp < 2.5) {
+        return {
+          level: 'Trung bình',
+          icon: '🌏',
+          description: 'Tác động đáng kể đến hệ sinh thái',
+          color: 'border-yellow-500 bg-yellow-50',
+          textColor: 'text-yellow-900',
+          events: ['🌀 Bão nhiệt đới mạnh hơn', '🔥 Cháy rừng gia tăng', '🌾 Hạn hán kéo dài', '🐻 Động vật mất môi trường sống']
+        };
+      } else if (temp < 3.0) {
+        return {
+          level: 'Cao',
+          icon: '🔥',
+          description: 'Thay đổi khí hậu nghiêm tr  ng',
+          color: 'border-orange-500 bg-orange-50',
+          textColor: 'text-orange-900',
+          events: ['🌊 Ngập lụt quy mô lớn', '🏜️ Sa mạc hóa rộng khắp', '💧 Thiếu nước nghiêm trọng', '🌡️ Sóng nhiệt chết người', '🦟 Dịch bệnh lây lan']
+        };
+      } else if (temp < 4.0) {
+        return {
+          level: 'Nghiêm trọng',
+          icon: '⚠️',
+          description: 'Thảm họa khí hậu to  n cầu',
+          color: 'border-red-500 bg-red-50',
+          textColor: 'text-red-900',
+          events: ['🏙️ Các thành phố ven biển chìm', '🌾 Mất mùa trên diện rộng', '💀 Tuyệt chủng hàng loạt', '🌪️ Thiên tai liên tục', '🚫 Khủng hoảng nhân đạo']
+        };
+      } else {
+        return {
+          level: 'Cực kỳ nghiêm trọng',
+          icon: '☠️',
+          description: 'Nguy cơ sụp đổ văn minh',
+          color: 'border-purple-800 bg-purple-100',
+          textColor: 'text-purple-900',
+          events: ['💥 Sụp đổ hệ sinh thái toàn cầu', '🌍 Trái đất không thể sinh sống', '⚰️ Tuyệt chủng hàng loạt loài', '🔥 Điểm không thể quay lại', '💔 Sụp đổ xã hội loài người']
+        };
+      }
+    }
+
+    function updateThreatLevel(temp) {
+      const threat = getThreatLevel(temp);
+      const box = document.getElementById('threat-level-box');
+      
+      box.className = `border-l-4 p-4 mb-6 rounded-r-lg ${threat.color}`;
+      document.getElementById('threat-icon').textContent = threat.icon;
+      document.getElementById('threat-level').textContent = threat.level;
+      document.getElementById('threat-level').className = `text-2xl font-bold ${threat.textColor}`;
+      document.getElementById('threat-description').textContent = threat.description;
+      document.getElementById('threat-description').className = `text-sm mt-1 ${threat.textColor}`;
+      
+      const eventsHTML = `
+        <p class="text-sm font-semibold mb-2 ${threat.textColor}">Sự kiện có thể xảy ra:</p>
+        ${threat.events.map(event => `<p class="text-sm ${threat.textColor}">• ${event}</p>`).join('')}
+      `;
+      document.getElementById('threat-events').innerHTML = eventsHTML;
+    }
+
+    function updatePredictions() {
+      const co2Rate = parseFloat(document.getElementById('co2-rate').value) || 0;
+      const tempAnomaly = parseFloat(document.getElementById('temp-anomaly').value) || 0;
+      const iceMelt = parseFloat(document.getElementById('ice-melt').value) || 0;
+
+      const yearsToProject = 2100 - 2024;
+      const co2_2100 = co2Rate >= 0 ? 420 * Math.pow(1 + co2Rate/100, yearsToProject) : Math.max(280, 420 * Math.pow(1 + co2Rate/100, yearsToProject));
+      const tempIncrease = 3 * Math.log(co2_2100 / 420) / Math.log(2);
+      const albedoFeedback = (iceMelt * yearsToProject) * 0.001;
+      const temp_2100 = tempAnomaly + tempIncrease + albedoFeedback;
+      const seaLevel_2100 = (iceMelt * yearsToProject) + ((temp_2100 - tempAnomaly) * 2);
+
+      document.getElementById('temp-2100').textContent = `${temp_2100 >= 0 ? '+' : ''}${temp_2100.toFixed(1)}°C`;
+      document.getElementById('sea-level-2100').textContent = `${seaLevel_2100 >= 0 ? '+' : ''}${Math.round(seaLevel_2100)} mm`;
+      document.getElementById('co2-2100').textContent = `${Math.round(co2_2100)} ppm`;
+
+      updateThreatLevel(temp_2100);
+
+      const projectionYears = [2024, 2040, 2060, 2080, 2100];
+      const projectionTemps = projectionYears.map(year => {
+        const t = year - 2024;
+        const co2_t = co2Rate >= 0 ? 420 * Math.pow(1 + co2Rate/100, t) : Math.max(280, 420 * Math.pow(1 + co2Rate/100, t));
+        const tempInc = 3 * Math.log(co2_t / 420) / Math.log(2);
+        const albedo = (iceMelt * t) * 0.001;
+        return tempAnomaly + tempInc + albedo;
+      });
+
+      predictionChart.data.datasets[0].data = projectionTemps;
+      predictionChart.update();
+    }
+
+    function updateTimeline() {
+      const yearsSince2024 = currentYear - 2024;
+      
+      // Calculate temperature and CO2 increase
+      const baseTemp = 1.2 + (yearsSince2024 * 0.02);
+      const baseCO2 = 420 + (yearsSince2024 * 2.5);
+      
+      // Check if this year has an event (30% chance)
+      if (!yearEvents[currentYear] && currentYear > 2024) {
+        const hasEvent = Math.random() < 0.3;
+        if (hasEvent) {
+          const randomEvent = climateEvents[Math.floor(Math.random() * climateEvents.length)];
+          yearEvents[currentYear] = randomEvent;
+          
+          // Apply event impacts
+          timelineTemp += randomEvent.tempImpact;
+          timelineCO2 += randomEvent.co2Impact;
+        }
+      }
+      
+      // Use base values for 2024 or accumulated values
+      if (currentYear === 2024) {
+        timelineTemp = 1.2;
+        timelineCO2 = 420;
+      } else {
+        // Gradually increase even without events
+        if (!yearEvents[currentYear]) {
+          timelineTemp = baseTemp;
+          timelineCO2 = baseCO2;
+        }
+      }
+      
+      // Update UI
+      document.getElementById('timeline-year').textContent = `Năm ${currentYear}`;
+      document.getElementById('timeline-temp').textContent = `Nhiệt độ: +${timelineTemp.toFixed(2)}°C`;
+      document.getElementById('timeline-co2').textContent = `CO₂: ${Math.round(timelineCO2)} ppm`;
+      
+      // Show/hide event
+      const eventDiv = document.getElementById('timeline-event');
+      if (yearEvents[currentYear]) {
+        const event = yearEvents[currentYear];
+        document.getElementById('event-description').textContent = event.name;
+        document.getElementById('event-impact').textContent = `${event.description} | Tác động: +${event.tempImpact}°C, +${event.co2Impact} ppm CO₂`;
+        eventDiv.classList.remove('hidden');
+      } else {
+        eventDiv.classList.add('hidden');
+      }
+      
+      // Update Earth icon based on threat level
+      const threat = getThreatLevel(timelineTemp);
+      document.getElementById('timeline-icon').textContent = threat.icon;
+      
+      // Update progress bar
+      const progress = (yearsSince2024 / 76) * 100;
+      document.getElementById('timeline-bar').style.width = `${progress}%`;
+      document.getElementById('timeline-progress').textContent = `${yearsSince2024} / 76 năm`;
+      
+      // Update button states
+      document.getElementById('timeline-prev').disabled = currentYear === 2024;
+    }
+
+    function updateSolutionsUI() {
+      const solutionImpacts = {
+        renewable: 0.3,
+        reforestation: 0.2,
+        electric: 0.15
+      };
+
+      // Update each solution card
+      ['renewable', 'reforestation', 'electric'].forEach(solution => {
+        const card = document.getElementById(`solution-${solution}`);
+        const status = card.querySelector('.solution-status');
+        
+        if (activeSolutions[solution]) {
+          card.classList.remove('bg-gray-50', 'border-gray-300');
+          card.classList.add('bg-green-50', 'border-green-500');
+          status.textContent = '✅';
+        } else {
+          card.classList.remove('bg-green-50', 'border-green-500');
+          card.classList.add('bg-gray-50', 'border-gray-300');
+          status.textContent = '⭕';
+        }
+      });
+
+      // Calculate total impact
+      let totalImpact = 0;
+      Object.keys(activeSolutions).forEach(solution => {
+        if (activeSolutions[solution]) {
+          totalImpact += solutionImpacts[solution];
+        }
+      });
+
+      document.getElementById('total-impact').textContent = totalImpact.toFixed(1);
+      
+      const baseTemp = 2.5;
+      const finalTemp = baseTemp - totalImpact;
+      document.getElementById('final-temp').textContent = `+${finalTemp.toFixed(1)}`;
+    }
+
+    function updateSolutionsChart() {
+      const solutionImpacts = {
+        renewable: 0.3,
+        reforestation: 0.2,
+        electric: 0.15
+      };
+
+      let totalImpact = 0;
+      Object.keys(activeSolutions).forEach(solution => {
+        if (activeSolutions[solution]) {
+          totalImpact += solutionImpacts[solution];
+        }
+      });
+
+      // Base scenario (no action)
+      const baseScenario = [1.2, 1.5, 1.9, 2.2, 2.5];
+      
+      // With solutions - gradual impact over time
+      const withSolutions = baseScenario.map((temp, index) => {
+        const yearProgress = index / 4; // 0 to 1
+        const impactAtYear = totalImpact * yearProgress;
+        return temp - impactAtYear;
+      });
+
+      solutionsChart.data.datasets[1].data = withSolutions;
+      solutionsChart.update();
+    }
+
+    function renderScenariosList() {
+      const container = document.getElementById('scenarios-list');
+      
+      if (scenarios.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 py-8">Chưa có kịch bản nào. Hãy tạo kịch bản mới ở tab Mô phỏng!</p>';
+        return;
+      }
+
+      container.innerHTML = scenarios.map(scenario => {
+        const date = new Date(scenario.created_at);
+        const dateStr = date.toLocaleDateString('vi-VN');
+        
+        return `
+          <div class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <h3 class="font-bold text-gray-800 text-lg">${scenario.scenario_name}</h3>
+                <p class="text-sm text-gray-500 mt-1">Tạo ngày: ${dateStr}</p>
+                <div class="mt-3 grid grid-cols-3 gap-2 text-sm">
+                  <div class="bg-yellow-50 p-2 rounded">
+                    <span class="font-semibold">CO₂:</span> ${scenario.co2_increase_rate}%/năm
+                  </div>
+                  <div class="bg-red-50 p-2 rounded">
+                    <span class="font-semibold">Nhiệt độ:</span> ${scenario.current_temp_anomaly}°C
+                  </div>
+                  <div class="bg-blue-50 p-2 rounded">
+                    <span class="font-semibold">Băng tan:</span> ${scenario.ice_melt_rate} mm/năm
+                  </div>
+                </div>
+              </div>
+              <button class="delete-scenario ml-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded transition" data-id="${scenario.__backendId}">
+                Xóa
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.delete-scenario').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const scenarioId = btn.dataset.id;
+          const scenario = scenarios.find(s => s.__backendId === scenarioId);
+          
+          if (!scenario) return;
+
+          btn.disabled = true;
+          btn.textContent = 'Đang xóa...';
+
+          const result = await window.dataSdk.delete(scenario);
+
+          if (!result.isOk) {
+            btn.disabled = false;
+            btn.textContent = 'Xóa';
+            showToast('Lỗi khi xóa kịch bản', 'error');
+          }
+        });
+      });
+    }
+
+    function loadQuizQuestion() {
+      const question = quizQuestions[currentQuestionIndex];
+      document.getElementById('quiz-question').textContent = `Câu hỏi ${currentQuestionIndex + 1}: ${question.question}`;
+      
+      const optionsContainer = document.getElementById('quiz-options');
+      optionsContainer.innerHTML = '';
+      
+      question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.className = 'quiz-option w-full text-left p-3 border-2 border-purple-300 rounded-lg hover:bg-purple-100 transition';
+        button.textContent = `${String.fromCharCode(65 + index)}. ${option}`;
+        button.dataset.index = index;
+        
+        button.addEventListener('click', () => handleAnswerClick(index, button));
+        
+        optionsContainer.appendChild(button);
+      });
+      
+      updateQuizProgress();
+    }
+
+    function handleAnswerClick(selectedIndex, buttonElement) {
+      if (selectedAnswer !== null) return; // Already answered
+      
+      selectedAnswer = selectedIndex;
+      const question = quizQuestions[currentQuestionIndex];
+      const isCorrect = selectedIndex === question.correct;
+      
+      if (isCorrect) {
+        quizScore++;
+        buttonElement.classList.remove('border-purple-300');
+        buttonElement.classList.add('border-green-500', 'bg-green-100');
+        showFeedback(true, question.explanation);
+      } else {
+        buttonElement.classList.remove('border-purple-300');
+        buttonElement.classList.add('border-red-500', 'bg-red-100');
+        
+        // Show correct answer
+        const correctButton = document.querySelectorAll('.quiz-option')[question.correct];
+        correctButton.classList.add('border-green-500', 'bg-green-100');
+        
+        showFeedback(false, question.explanation);
+      }
+      
+      // Disable all options
+      document.querySelectorAll('.quiz-option').forEach(btn => {
+        btn.disabled = true;
+        btn.classList.remove('hover:bg-purple-100');
+      });
+      
+      updateQuizProgress();
+      document.getElementById('next-question').classList.remove('hidden');
+    }
+
+    function showFeedback(isCorrect, explanation) {
+      const feedbackDiv = document.getElementById('quiz-feedback');
+      const feedbackText = document.getElementById('feedback-text');
+      const feedbackExplanation = document.getElementById('feedback-explanation');
+      
+      feedbackDiv.classList.remove('hidden', 'bg-green-100', 'bg-red-100');
+      
+      if (isCorrect) {
+        feedbackDiv.classList.add('bg-green-100');
+        feedbackText.textContent = '✅ Chính xác!';
+        feedbackText.className = 'font-semibold mb-2 text-green-800';
+      } else {
+        feedbackDiv.classList.add('bg-red-100');
+        feedbackText.textContent = '❌ Không chính xác';
+        feedbackText.className = 'font-semibold mb-2 text-red-800';
+      }
+      
+      feedbackExplanation.textContent = explanation;
+    }
+
+    function updateQuizProgress() {
+      document.getElementById('quiz-progress').textContent = `${currentQuestionIndex + 1}/10`;
+      document.getElementById('quiz-score').textContent = quizScore;
+      
+      const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+      document.getElementById('quiz-progress-bar').style.width = `${progress}%`;
+    }
+
+    function showQuizResult() {
+      document.getElementById('quiz-container').classList.add('hidden');
+      document.getElementById('quiz-result').classList.remove('hidden');
+      document.getElementById('final-score').textContent = quizScore;
+      
+      // Find achievement
+      let achievement = achievements[0];
+      for (let i = achievements.length - 1; i >= 0; i--) {
+        if (quizScore >= achievements[i].minScore) {
+          achievement = achievements[i];
+          break;
+        }
+      }
+      
+      document.getElementById('achievement-icon').textContent = achievement.icon;
+      document.getElementById('achievement-title').textContent = achievement.title;
+      document.getElementById('achievement-desc').textContent = achievement.description;
+    }
+
+    function renderDictionary(searchQuery = '') {
+      const container = document.getElementById('dictionary-list');
+      const query = searchQuery.toLowerCase().trim();
+      
+      const filteredTerms = query === '' 
+        ? dictionaryTerms 
+        : dictionaryTerms.filter(term => 
+            term.term.toLowerCase().includes(query) || 
+            term.definition.toLowerCase().includes(query) ||
+            term.category.toLowerCase().includes(query) ||
+            term.details.toLowerCase().includes(query)
+          );
+
+      if (filteredTerms.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 py-8">Không tìm th   y thuật ngữ nào phù hợp.</p>';
+        return;
+      }
+
+      // Group by category
+      const grouped = {};
+      filteredTerms.forEach(term => {
+        if (!grouped[term.category]) {
+          grouped[term.category] = [];
+        }
+        grouped[term.category].push(term);
+      });
+
+      let html = '';
+      Object.keys(grouped).sort().forEach(category => {
+        html += `
+          <div class="mb-6">
+            <h3 class="text-xl font-bold text-purple-700 mb-3 pb-2 border-b-2 border-purple-200">${category}</h3>
+            <div class="space-y-3">
+              ${grouped[category].map(term => `
+                <div class="p-4 bg-gray-50 rounded-lg border-l-4 border-blue-500 hover:shadow-md transition">
+                  <div class="flex items-start gap-3">
+                    <span class="text-3xl">${term.icon}</span>
+                    <div class="flex-1">
+                      <h4 class="text-lg font-bold text-gray-800 mb-1">${term.term}</h4>
+                      <p class="text-gray-700 mb-2">${term.definition}</p>
+                      <p class="text-sm text-gray-600 leading-relaxed">${term.details}</p>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function updateFeedbackButtons() {
+      const positiveBtn = document.getElementById('show-positive');
+      const negativeBtn = document.getElementById('show-negative');
+      
+      if (currentFeedbackType === 'positive') {
+        positiveBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+        positiveBtn.classList.add('bg-red-700', 'ring-4', 'ring-red-300');
+        negativeBtn.classList.remove('bg-blue-700', 'ring-4', 'ring-blue-300');
+        negativeBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+      } else {
+        negativeBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        negativeBtn.classList.add('bg-blue-700', 'ring-4', 'ring-blue-300');
+        positiveBtn.classList.remove('bg-red-700', 'ring-4', 'ring-red-300');
+        positiveBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+      }
+    }
+
+    function renderFeedbackLoops() {
+      const container = document.getElementById('feedback-loops-container');
+      const loops = currentFeedbackType === 'positive' ? positiveFeedbackLoops : negativeFeedbackLoops;
+      
+      const headerColor = currentFeedbackType === 'positive' ? 'bg-red-100 border-red-500' : 'bg-blue-100 border-blue-500';
+      const headerTextColor = currentFeedbackType === 'positive' ? 'text-red-900' : 'text-blue-900';
+      const loopBorderColor = currentFeedbackType === 'positive' ? 'border-red-300' : 'border-blue-300';
+      
+      let html = `
+        <div class="mb-6 p-4 ${headerColor} border-l-4 rounded-r-lg">
+          <h3 class="text-xl font-bold ${headerTextColor} mb-2">
+            ${currentFeedbackType === 'positive' ? '⚠️ Phản hồi Dương (Positive Feedback)' : '✅ Phản hồi Âm (Negative Feedback)'}
+          </h3>
+          <p class="text-sm ${headerTextColor}">
+            ${currentFeedbackType === 'positive' 
+              ? 'Các vòng phản hồi tự tăng cường - làm biến đổi khí hậu nghiêm trọng hơn. Đây là lý do tại sao phải hành động ngay!'
+              : 'Các v  ng phản hồi tự điều chỉnh - giúp ổn định khí hậu. Tuy nhiên, chúng có giới hạn và không đủ để ngăn biến đổi khí hậu do con người.'
+            }
+          </p>
+        </div>
+        <div class="space-y-4">
+      `;
+      
+      loops.forEach(loop => {
+        html += `
+          <div class="p-4 bg-gradient-to-br from-white to-gray-50 rounded-xl border-2 ${loopBorderColor} shadow-md hover:shadow-lg transition">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-4xl">${loop.icon}</span>
+              <h3 class="text-xl font-bold text-gray-800">${loop.name}</h3>
+            </div>
+            
+            <!-- Steps Flow -->
+            <div class="mb-3 space-y-2">
+              ${loop.steps.map((step, index) => `
+                <div class="flex items-center gap-2">
+                  <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold">
+                    ${index + 1}
+                  </div>
+                  <div class="flex-1 p-3 ${step.color} rounded-lg border border-gray-300 flex items-center gap-2">
+                    <span class="text-xl">${step.icon}</span>
+                    <span class="font-semibold">${step.text}</span>
+                  </div>
+                  ${index < loop.steps.length - 1 ? '<div class="flex-shrink-0 text-2xl text-gray-400">↓</div>' : ''}
+                </div>
+                ${index === loop.steps.length - 1 && currentFeedbackType === 'positive' ? `
+                  <div class="flex items-center justify-center">
+                    <div class="text-3xl text-red-500 font-bold animate-pulse">🔄 ↻</div>
+                  </div>
+                  <div class="text-center text-sm font-bold text-red-600 mt-2">Vòng lặp lặp lại và tăng cường!</div>
+                ` : ''}
+                ${index === loop.steps.length - 1 && currentFeedbackType === 'negative' ? `
+                  <div class="flex items-center justify-center mt-2">
+                    <div class="text-2xl text-green-600 font-bold">✓ Hệ thống ổn định</div>
+                  </div>
+                ` : ''}
+              `).join('')}
+            </div>
+            
+            <!-- Description -->
+            <div class="p-3 bg-white rounded-lg border border-gray-200 mb-2">
+              <p class="text-gray-700 leading-relaxed text-sm">${loop.description}</p>
+            </div>
+            
+            <!-- Metadata -->
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <div class="p-2 bg-purple-50 rounded border border-purple-200">
+                <span class="text-xs font-semibold text-purple-700">Tác động:</span>
+                <span class="text-sm font-bold text-purple-900 ml-1">${loop.impact}</span>
+              </div>
+              <div class="p-2 bg-indigo-50 rounded border border-indigo-200">
+                <span class="text-xs font-semibold text-indigo-700">Thời gian:</span>
+                <span class="text-sm font-bold text-indigo-900 ml-1">${loop.timescale}</span>
+              </div>
+            </div>
+            
+            ${loop.note ? `
+              <div class="p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded-r">
+                <p class="text-sm text-yellow-800">${loop.note}</p>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    initializeApp();
+    renderDictionary();
+    renderFeedbackLoops();
+    updateFeedbackButtons();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9af3c97464be043d',t:'MTc2NTk0Njg5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
